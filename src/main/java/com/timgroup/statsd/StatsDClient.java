@@ -102,7 +102,7 @@ public final class StatsDClient {
      * @param aspect
      *     the name of the counter to increment
      */
-    public void incrementCounter(String aspect) {
+    public void increment(String aspect) {
         send(String.format("%s.%s:%d|c", prefix, aspect, 1));
     }
 
@@ -116,7 +116,7 @@ public final class StatsDClient {
      * @param value
      *     the new reading of the gauge
      */
-    public void recordGaugeValue(String aspect, int value) {
+    public void gauge(String aspect, int value) {
         send(String.format("%s.%s:%d|g", prefix, aspect, value));
     }
 
@@ -130,7 +130,7 @@ public final class StatsDClient {
      * @param timeInMs
      *     the time in milliseconds
      */
-    public void recordExecutionTime(String aspect, int timeInMs) {
+    public void timing(String aspect, int timeInMs) {
         send(String.format("%s.%s:%d|ms", prefix, aspect, timeInMs));
     }
 
