@@ -56,4 +56,25 @@ public class StatsDClientTest {
         while (received.isEmpty()) { Thread.sleep(50L); }
         assertThat(received, contains("my.prefix.blah:1|c"));
     }
+
+    @Test(timeout=5000L) public void
+    increments_by_x_correctly() throws Exception {
+        client.increment("blah", 123);
+        while (received.isEmpty()) { Thread.sleep(50L); }
+        assertThat(received, contains("my.prefix.blah:123|c"));
+    }
+
+    @Test(timeout=5000L) public void
+    decrements_correctly() throws Exception {
+        client.decrement("blah");
+        while (received.isEmpty()) { Thread.sleep(50L); }
+        assertThat(received, contains("my.prefix.blah:-1|c"));
+    }
+
+    @Test(timeout=5000L) public void
+    decrements_by_x_correctly() throws Exception {
+        client.decrement("blah", 123);
+        while (received.isEmpty()) { Thread.sleep(50L); }
+        assertThat(received, contains("my.prefix.blah:-123|c"));
+    }
 }

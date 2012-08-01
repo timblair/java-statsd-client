@@ -95,6 +95,20 @@ public final class StatsDClient {
     }
 
     /**
+     * Increments the specified counter by a specified amount.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to increment
+     * @param value
+     *     the amount to increment the counter by
+     */
+    public void increment(String aspect, int value) {
+        send(String.format("%s.%s:%d|c", prefix, aspect, value));
+    }
+
+    /**
      * Increments the specified counter by one.
      * 
      * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
@@ -103,7 +117,33 @@ public final class StatsDClient {
      *     the name of the counter to increment
      */
     public void increment(String aspect) {
-        send(String.format("%s.%s:%d|c", prefix, aspect, 1));
+        increment(aspect, 1);
+    }
+
+    /**
+     * Decrements the specified counter by one.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to decrement
+     */
+    public void decrement(String aspect) {
+        increment(aspect, -1);
+    }
+
+    /**
+     * Decrements the specified counter by a specified amount.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to increment
+     * @param value
+     *     the amount to decrement the counter by
+     */
+    public void decrement(String aspect, int value) {
+        increment(aspect, -value);
     }
 
     /**
