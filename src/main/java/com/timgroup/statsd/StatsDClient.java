@@ -130,6 +130,23 @@ public final class StatsDClient {
     }
 
     /**
+     * Increments the specified counter by a specified amount, at a specified
+     * sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to increment
+     * @param value
+     *     the amount to increment the counter by
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void increment(String aspect, int value, double sampleRate) {
+        send(String.format("%s.%s:%d|c", prefix, aspect, value), sampleRate);
+    }
+
+    /**
      * Increments the specified counter by one.
      * 
      * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
@@ -142,6 +159,20 @@ public final class StatsDClient {
     }
 
     /**
+     * Increments the specified counter by one, at a specified sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to increment
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void increment(String aspect, double sampleRate) {
+        increment(aspect, 1, sampleRate);
+    }
+
+    /**
      * Decrements the specified counter by one.
      *
      * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
@@ -151,6 +182,20 @@ public final class StatsDClient {
      */
     public void decrement(String aspect) {
         increment(aspect, -1);
+    }
+
+    /**
+     * Decrements the specified counter by one, at a specified sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to decrement
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void decrement(String aspect, double sampleRate) {
+        increment(aspect, -1, sampleRate);
     }
 
     /**
@@ -168,6 +213,23 @@ public final class StatsDClient {
     }
 
     /**
+     * Decrements the specified counter by a specified amount, at a specified
+     * sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the counter to increment
+     * @param value
+     *     the amount to decrement the counter by
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void decrement(String aspect, int value, double sampleRate) {
+        increment(aspect, -value, sampleRate);
+    }
+
+    /**
      * Records the latest fixed value for the specified named gauge.
      * 
      * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
@@ -179,6 +241,23 @@ public final class StatsDClient {
      */
     public void gauge(String aspect, int value) {
         send(String.format("%s.%s:%d|g", prefix, aspect, value));
+    }
+
+    /**
+     * Records the latest fixed value for the specified named gauge, at a
+     * specified sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the gauge
+     * @param value
+     *     the new reading of the gauge
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void gauge(String aspect, int value, double sampleRate) {
+        send(String.format("%s.%s:%d|g", prefix, aspect, value), sampleRate);
     }
 
     /**
@@ -195,6 +274,23 @@ public final class StatsDClient {
         send(String.format("%s.%s:%d|ms", prefix, aspect, timeInMs));
     }
 
+    /**
+     * Records an execution time in milliseconds for the specified named
+     * operation, at a specified sampling rate.
+     *
+     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     *
+     * @param aspect
+     *     the name of the timed operation
+     * @param timeInMs
+     *     the time in milliseconds
+     * @param sampleRate
+     *     the rate at which to sample this data
+     */
+    public void timing(String aspect, int timeInMs, double sampleRate) {
+        send(String.format("%s.%s:%d|ms", prefix, aspect, timeInMs), sampleRate);
+    }
+
     protected String sample(String message, double rate) {
         if (rate == 0.0) {
             message = null;
@@ -209,7 +305,11 @@ public final class StatsDClient {
     }
 
     private void send(final String message) {
-        final String sampledString = sample(message, this.sampleRate);
+        send(message, this.sampleRate);
+    }
+
+    private void send(final String message, double sampleRate) {
+        final String sampledString = sample(message, sampleRate);
         if (sampledString != null) {
             try {
                 executor.execute(new Runnable() {
