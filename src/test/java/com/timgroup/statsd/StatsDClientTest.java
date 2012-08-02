@@ -1,13 +1,15 @@
 package com.timgroup.statsd;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.net.SocketException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.reflect.Method;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,7 +34,6 @@ public class StatsDClientTest {
                         server.receive(packet);
                         String in = new String(packet.getData()).trim();
                         received.add(in);
-                        System.out.println(in);
                     } catch (Exception e) { }
                 }
             }
@@ -76,5 +77,38 @@ public class StatsDClientTest {
         client.decrement("blah", 123);
         while (received.isEmpty()) { Thread.sleep(50L); }
         assertThat(received, contains("my.prefix.blah:-123|c"));
+    }
+
+    @Test public void
+    always_include_sample_if_rate_is_1() throws Exception {
+        assertThat(client.sample("foo", 1.0), equalTo("foo"));
+    }
+
+    @Test public void
+    never_include_sample_if_rate_is_0() throws Exception {
+        assertNull(client.sample("foo", 0.0));
+    }
+
+    @Test public void
+    samples_at_correct_rate() throws Exception {
+        int total = 10000;
+        int sampled = 0;
+        double rate = 0.1;
+        StatsDClient.RNG.setSeed(1234567890l);
+        for (int i = 0; i < total; i++) {
+            String out = client.sample("foo", rate);
+            if (out != null) { sampled++; }
+        }
+        // With the seed given about, this should be 1006, but we'll use a
+        // delta just in case of platform differences.
+        assertEquals(1000, sampled, total*0.01);
+    }
+
+    @Test public void
+    appends_sample_rate_to_message() throws Exception {
+        String out = null;
+        double rate = 0.8;
+        while (out == null) { out = client.sample("foo", rate); }
+        assertThat(out, equalTo("foo|@0.8"));
     }
 }

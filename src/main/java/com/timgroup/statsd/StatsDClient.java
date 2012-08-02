@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.Random;
 
 /**
  * A simple StatsD client implementation facilitating metrics recording.
@@ -37,8 +38,10 @@ import java.util.concurrent.TimeUnit;
  */
 public final class StatsDClient {
 
+    protected static final Random RNG = new Random();
     private final String prefix;
     private final DatagramSocket clientSocket;
+    private double sampleRate = 1.0;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
         final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -73,6 +76,24 @@ public final class StatsDClient {
         } catch (SocketException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * Set the base sample rate.  This sample rate is used unless a specific
+     * rate is provided.
+     *
+     * @param rate
+     *     the default sample rate to use (default: 1.0)
+     */
+    public void setSampleRate(double rate) {
+        this.sampleRate = rate;
+    }
+
+    /**
+     * Get the base sample rate.
+     */
+    public double getSampleRate() {
+        return this.sampleRate;
     }
 
     /**
@@ -174,16 +195,30 @@ public final class StatsDClient {
         send(String.format("%s.%s:%d|ms", prefix, aspect, timeInMs));
     }
 
-    private void send(final String message) {
-        try {
-            executor.execute(new Runnable() {
-                @Override public void run() {
-                    blockingSend(message);
-                }
-            });
+    protected String sample(String message, double rate) {
+        if (rate == 0.0) {
+            message = null;
+        } else if (rate < 1.0) {
+            if (RNG.nextDouble() <= rate) {
+                message = String.format("%s|@%s", message, new Double(rate));
+            } else {
+                message = null;
+            }
         }
-        catch (Exception e) {
-            // we cannot allow exceptions to interfere with our caller's execution
+        return message;
+    }
+
+    private void send(final String message) {
+        final String sampledString = sample(message, this.sampleRate);
+        if (sampledString != null) {
+            try {
+                executor.execute(new Runnable() {
+                    @Override public void run() {
+                        blockingSend(sampledString);
+                    }
+                });
+            // don't allow exceptions to interfere with our caller's execution
+            } catch (Exception e) { }
         }
     }
 
@@ -192,7 +227,6 @@ public final class StatsDClient {
             final byte[] sendData = message.getBytes();
             final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length);
             clientSocket.send(sendPacket);
-        } catch (Exception e) {
-        }
+        } catch (Exception e) { }
     }
 }
